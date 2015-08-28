@@ -47,8 +47,6 @@ class ClinicalDataCleanScenarioConceptTypeTestsFail {
                 ClinicalDataLoadJobConfiguration.JOB_NAME,
                 runJob.finalJobParameters).exitStatus.exitDescription
 
-        assertThat exitDescription, allOf(
-                containsString('numerical, but got value \'test1\'.'),
-                containsString('Patient id: GSE8581GSM210005'),)
+        assertThat exitDescription, containsString('numerical, but got value \'test1\'.')
     }
 }

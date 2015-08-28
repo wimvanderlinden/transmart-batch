@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component
 import org.springframework.validation.BindException
 import org.transmartproject.batch.beans.JobScopeInterfaced
 import org.transmartproject.batch.concept.ConceptPath
-import org.transmartproject.batch.patient.DemographicVariable
 
 /**
  * Fill the calculated fields of {@link ClinicalVariable}.
@@ -30,27 +29,7 @@ class ClinicalVariableFieldMapper implements FieldSetMapper<ClinicalVariable> {
     @Override
     ClinicalVariable mapFieldSet(FieldSet fieldSet) throws BindException {
         ClinicalVariable item = delegate.mapFieldSet(fieldSet)
-        process item
-    }
-
-    private ClinicalVariable process(ClinicalVariable item) throws Exception {
-        if (!ClinicalVariable.RESERVED.contains(item.dataLabel)) {
-            ConceptPath path = topNodePath +
-                    toPath(item.categoryCode) +
-                    toPath(item.dataLabel)
-
-            item.conceptPath = path
-        }
-
-        item.demographicVariable =
-                DemographicVariable.getMatching(item.dataLabel)
-
+        item.topNodePath = topNodePath
         item
-    }
-
-    private static String toPath(String columnMappingPathFragment) {
-        columnMappingPathFragment
-                .replace('+', '\\')
-                .replace('_', ' ')
     }
 }

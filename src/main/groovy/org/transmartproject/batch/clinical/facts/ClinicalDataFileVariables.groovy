@@ -4,68 +4,46 @@ import groovy.util.logging.Slf4j
 import org.transmartproject.batch.clinical.variable.ClinicalVariable
 import org.transmartproject.batch.patient.DemographicVariable
 
+import static org.transmartproject.batch.clinical.variable.ClinicalVariable.*
+
 /**
  * Holds the variables defined for a file
  */
 @Slf4j
 class ClinicalDataFileVariables {
-    ClinicalVariable subjectIdVariable
-    ClinicalVariable siteIdVariable
-    ClinicalVariable visitNameVariable
-    List<ClinicalVariable> otherVariables = []
-    List<ClinicalVariable> demographicRelated = []
+
+    Map<String, List<ClinicalVariable>> reservedVariablesByDataLabelMap = [:]
+    Map<DemographicVariable, List<ClinicalVariable>> demographicVariablesMap = [:]
+    List<ClinicalVariable> simpleVariables = []
 
     static ClinicalDataFileVariables fromVariableList(List<ClinicalVariable> list) {
-        def otherVariables = []
-        def args = [:]
-        def demographic = []
-        list.each {
-            switch (it.dataLabel) {
-                case ClinicalVariable.SUBJ_ID:
-                    args.put('subjectIdVariable', it)
-                    break
-                case ClinicalVariable.SITE_ID:
-                    args.put('siteIdVariable', it)
-                    break
-                case ClinicalVariable.VISIT_NAME:
-                    args.put('visitNameVariable', it)
-                    break
-                case ClinicalVariable.OMIT:
-                case ClinicalVariable.STUDY_ID:
-                    //ignore
-                    break
-                default:
-                    otherVariables.add(it)
-            }
-            if (it.demographic) {
-                demographic.add(it)
-            }
-        }
-        args.put('otherVariables', otherVariables)
-        args.put('demographicRelated', demographic)
+        def (resVars, simpleVariables) = list.split { it.reserved }
 
-        new ClinicalDataFileVariables(args)
+        def reservedVariablesByDataLabelMap = resVars.groupBy { it.dataLabel }
+        def demographicVariablesMap = simpleVariables.groupBy { it.demographicVariable }
+        demographicVariablesMap.remove(null)
+
+        new ClinicalDataFileVariables(
+                reservedVariablesByDataLabelMap:    reservedVariablesByDataLabelMap,
+                demographicVariablesMap:            demographicVariablesMap,
+                simpleVariables:                    simpleVariables)
     }
 
     String getPatientId(ClinicalDataRow row) {
-        row[subjectIdVariable.columnNumber]
+        reservedVariablesByDataLabelMap[SUBJ_ID]?.first()?.getRowValue(row)
     }
 
     String getSiteId(ClinicalDataRow row) {
-        if (siteIdVariable) {
-            row[siteIdVariable.columnNumber]
-        }
+        reservedVariablesByDataLabelMap[SITE_ID]?.first()?.getRowValue(row)
     }
 
     String getVisitName(ClinicalDataRow row) {
-        if (visitNameVariable) {
-            row[visitNameVariable.columnNumber]
-        }
+        reservedVariablesByDataLabelMap[VISIT_NAME]?.first()?.getRowValue(row)
     }
 
     Map<DemographicVariable, String> getDemographicVariablesValues(ClinicalDataRow row) {
-        demographicRelated.collectEntries { ClinicalVariable var ->
-            [var.demographicVariable, row[var.columnNumber]]
+        demographicVariablesMap.collectEntries {
+            [ it.key, it.value.first().getRowValue(row) ]
         }
     }
 }

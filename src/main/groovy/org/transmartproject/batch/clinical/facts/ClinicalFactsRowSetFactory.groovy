@@ -11,6 +11,7 @@ import org.transmartproject.batch.clinical.variable.ClinicalVariable
 import org.transmartproject.batch.clinical.xtrial.XtrialMappingCollection
 import org.transmartproject.batch.clinical.xtrial.XtrialNode
 import org.transmartproject.batch.concept.ConceptNode
+import org.transmartproject.batch.concept.ConceptPath
 import org.transmartproject.batch.concept.ConceptTree
 import org.transmartproject.batch.concept.ConceptType
 import org.transmartproject.batch.facts.ClinicalFactsRowSet
@@ -50,8 +51,8 @@ class ClinicalFactsRowSetFactory {
         result.siteId = fileVariables.getSiteId(row)
         result.visitName = fileVariables.getVisitName(row)
 
-        fileVariables.otherVariables.each { ClinicalVariable var ->
-            String value = row[var.columnNumber]
+        fileVariables.simpleVariables.each { ClinicalVariable var ->
+            String value = var.getRowValue(row)
 
             if (!value) {
                 return
@@ -64,14 +65,16 @@ class ClinicalFactsRowSetFactory {
                         "Variable: $var, line ${row.index} of ${row.filename}}"
             }
 
-            processVariableValue result, var, value
+            ConceptPath conceptPath = var.getConceptPath(fileVariables, row)
+            def concept = processVariableValue conceptPath, var, value
+            result.addValue concept, getXtrialNodeFor(concept), value
         }
 
         result
     }
 
-
-    private void processVariableValue(ClinicalFactsRowSet result,
+    //TODO Move it to the tree class?
+    private ConceptNode processVariableValue(ConceptPath conceptPath,
                                       ClinicalVariable var,
                                       String value) {
         /*
@@ -79,7 +82,7 @@ class ClinicalFactsRowSetFactory {
          */
 
         ConceptType conceptType
-        ConceptNode concept = tree[var.conceptPath]
+        ConceptNode concept = tree[conceptPath]
 
         // if the concept doesn't yet exist (ie first record)
         if (!concept) {
@@ -94,7 +97,7 @@ class ClinicalFactsRowSetFactory {
 
             // has the side-effect of assigning type if it's unknown and
             // creating the concept from scratch if it doesn't exist at all
-            concept = tree.getOrGenerate(var.conceptPath, conceptType)
+            concept = tree.getOrGenerate(conceptPath, conceptType)
         } else { // the concept does already exist (ie not first record)
             conceptType = concept.type
 
@@ -102,18 +105,17 @@ class ClinicalFactsRowSetFactory {
 
             if (conceptType == ConceptType.NUMERICAL && !curValIsNumerical) {
                 throw new IllegalArgumentException("Variable $var inferred or specified " +
-                        "numerical, but got value '$value'. Patient id: " +
-                        "${result.patient.id}.")
+                        "numerical, but got value '$value'.")
             }
 
         }
 
         // we need a subnode if the variable is categorical
         if (conceptType == ConceptType.CATEGORICAL) {
-            concept = tree.getOrGenerate(var.conceptPath + value, ConceptType.CATEGORICAL)
+            concept = tree.getOrGenerate(conceptPath + value, ConceptType.CATEGORICAL)
         }
 
-        result.addValue concept, getXtrialNodeFor(concept), value
+        concept
     }
 
     private ConceptType getConceptTypeFromColumnsFile(ClinicalVariable var) {
