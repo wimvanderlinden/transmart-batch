@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.jdbc.datasource.DataSourceUtils
 import org.springframework.validation.Errors
 import org.springframework.validation.Validator
-import org.transmartproject.batch.support.StringUtils
 
 import javax.sql.DataSource
 import java.sql.DatabaseMetaData
@@ -83,14 +82,24 @@ class DbMetadataBasedBoundsValidator implements Validator {
         }
     }
 
+    private String getIdentifier(DatabaseMetaData meta, String name) {
+        if (meta.storesUpperCaseIdentifiers()) {
+            name.toUpperCase()
+        } else if (meta.storesLowerCaseIdentifiers()) {
+            name.toLowerCase()
+        } else {
+            name
+        }
+    }
+
     private Map processColumnSpecification(DatabaseMetaData meta,
                                            ColumnSpecification spec) {
-        // TODO: check which character oracle uses to escape the like expressions
+
         ResultSet rs = meta.getColumns(
                 null,
-                StringUtils.escapeForLike(spec.schema),
-                StringUtils.escapeForLike(spec.table),
-                StringUtils.escapeForLike(spec.column),)
+                getIdentifier(meta, spec.schema),
+                getIdentifier(meta, spec.table),
+                getIdentifier(meta, spec.column))
 
         if (!rs.next()) {
             throw new IllegalArgumentException(

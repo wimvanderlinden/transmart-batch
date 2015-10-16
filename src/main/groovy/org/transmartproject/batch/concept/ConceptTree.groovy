@@ -116,7 +116,6 @@ class ConceptTree {
         }
 
         node.code = reserver.getNext(Sequences.CONCEPT)
-        node.i2b2RecordId = reserver.getNext(Sequences.I2B2_RECORDID)
     }
 
     void reserveIdsFor(Collection<ConceptNode> nodes) {

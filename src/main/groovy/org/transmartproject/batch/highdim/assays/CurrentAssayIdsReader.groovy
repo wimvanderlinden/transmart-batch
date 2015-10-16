@@ -58,7 +58,7 @@ class CurrentAssayIdsReader implements ItemStreamReader<Long> {
             log.debug('Nothing to do, no old high dim nodes ' +
                     'related to current job')
 
-            wherePart = 'FALSE'
+            wherePart = '1=2'
             parameters = []
         } else {
             log.info('Will delete assays and data related with concepts: ' +

@@ -88,7 +88,6 @@ class InsertConceptsService {
                     download_date     : now,
                     import_date       : now,
                     sourcesystem_cd   : conceptTree.isStudyNode(it) ? studyId : null,
-                    record_id         : it.i2b2RecordId,
             ]
 
             Map i2b2SecureRow = new HashMap(i2b2Row)

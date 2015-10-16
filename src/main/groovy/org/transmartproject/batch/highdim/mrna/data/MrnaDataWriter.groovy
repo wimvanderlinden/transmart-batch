@@ -27,8 +27,8 @@ class MrnaDataWriter implements ItemWriter<TripleStandardDataValue> {
     @Autowired
     private JdbcTemplate jdbcTemplate
 
-    @Value("#{mrnaDataJobContextItems.partitionId}")
-    private int partitionId
+    @Value("#{mrnaDataJobContextItems.partitionTableName}")
+    private String qualifiedTableName
 
     @Lazy
     @SuppressWarnings('PrivateFieldCouldBeFinal')
@@ -46,7 +46,4 @@ class MrnaDataWriter implements ItemWriter<TripleStandardDataValue> {
                 "inserting mRNA data in $qualifiedTableName")
     }
 
-    private String getQualifiedTableName() {
-        Tables.MRNA_DATA + '_' + partitionId
-    }
 }
